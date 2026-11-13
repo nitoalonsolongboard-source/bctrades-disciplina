@@ -184,7 +184,7 @@ body.modo-fin .onb .link.dk,body.modo-fin .vacio .link.dk{color:#fff}
 .ab-t b{font-size:19px;line-height:24px;font-weight:800;letter-spacing:-.01em}.ab-t span{font-size:12px;font-weight:600;color:var(--mu)}
 .pulso{width:12px;height:12px;border-radius:3px;transform:rotate(45deg);background:var(--ac);flex-shrink:0;box-shadow:0 0 0 0 var(--ac);animation:pulso 1.8s ease-out infinite}
 @keyframes pulso{70%{box-shadow:0 0 0 10px transparent}100%{box-shadow:0 0 0 0 transparent}}
-.nota{text-align:center;font-size:13px;font-weight:700;color:var(--mu);min-height:18px}.nota.ok{color:var(--ok)}
+.nota{text-align:center;font-size:13px;font-weight:700;color:var(--mu);min-height:18px}.nota.ok{color:var(--ok)}.nota.warn{color:var(--warn)}
 .crow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding-top:10px;border-top:1px solid var(--ln)}
 .crow div{display:flex;flex-direction:column;gap:1px;min-width:0}.crow b{font-size:14px;font-weight:800}.crow span{font-size:12px;font-weight:600;color:var(--mu)}
 .crow .cr{align-items:flex-end;flex-shrink:0}.crow b.ok{color:var(--ok)}.crow b.er{color:var(--er)}
@@ -278,6 +278,9 @@ body.modo-fin .vacio{color:rgba(255,255,255,.8);border-color:rgba(255,255,255,.2
 .q button:active{transform:scale(.94)}
 .q button.on.ok{background:var(--ok);border-color:var(--ok);color:var(--onOk)}
 .q button.on.er{background:var(--er);border-color:var(--er);color:var(--onEr)}
+.aviso-sin{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:var(--r2);background:var(--warns);color:var(--warn);margin:2px 0 6px}
+.aviso-sin b{font-size:14px;font-weight:800}.aviso-sin span{font-size:13px;line-height:18px;font-weight:600;color:var(--ink)}
+.chipf .sinm{display:block;margin-top:3px;font-size:11px;font-weight:800;color:var(--warn)}
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 12px}
 .chipf{max-width:100%;white-space:normal;font-size:13px;line-height:17px;font-weight:600;padding:10px 12px;min-height:44px;border-radius:var(--r2);border:1.5px solid var(--ln);background:var(--sf);color:var(--ink);text-align:left;cursor:pointer;transition:background-color var(--t2),border-color var(--t2),color var(--t2)}
 .chipf.on{background:var(--ers);border-color:var(--er);color:var(--er)}
@@ -448,7 +451,7 @@ html[data-dir="baja"]::view-transition-old(vista){animation-name:v-sal-aba}html[
    Disciplina BC Trades · v3.0
    Un solo archivo. Datos del usuario: objeto S (tabla estados.estado).
    ===================================================================== */
-const VERSION='4.0';
+const VERSION='4.1';
 const KEY='bct-disciplina-v1',MKEY=KEY+'-meta',UKEY=KEY+'-ui';
 window.addEventListener('error',e=>{try{console.warn(e.error||e.message);toast('Algo ha fallado: '+(e.message||'error desconocido'))}catch(_){}});
 window.addEventListener('unhandledrejection',e=>{try{console.warn(e.reason)}catch(_){}});
@@ -560,6 +563,8 @@ function recientes(){const out=[];const ks=Object.keys(S.days).sort().reverse();
 function ultimaOp(){const ks=Object.keys(S.days).sort().reverse();for(const k of ks){const ts=S.days[k].trades||[];if(ts.length)return ts[ts.length-1]}return null}
 function nuevoDraft(){const u=ultimaOp();const cs=cuentas();return{op:null,cuenta:u&&cs.some(c=>c.id===u.cuenta)?u.cuenta:null,checks:{},inst:'',dir:'',t:Date.now()}}
 function nuevoTmp(){return{riesgo:'',lotes:'',r:'',promedio:null,movioStop:null,checklistOk:null,captura:null,fallos:[]}}
+function sinMarcar(o){o=o||S.open;if(!o||!Array.isArray(o.marcadas))return[];const n=itemsDe(o.op,o.cuenta).length,out=[];for(let i=0;i<n;i++)if(!o.marcadas.includes(i))out.push(i);return out}
+function tmpCierre(){const t=nuevoTmp();t.fallos=sinMarcar();return t}
 
 /* ---------- Borradores (sobreviven si el móvil recarga la app al cambiar al bróker) ---------- */
 function guardarUI(){if(!ME)return;try{localStorage.setItem(UKEY,JSON.stringify({uid:ME.id,dia:today(),t:Date.now(),view,draft,tmp}))}catch(e){}}
@@ -908,7 +913,7 @@ function vOperar(){
   if(!draft.cuenta||!cs.some(x=>x.id===draft.cuenta)||estadoCuenta(cuentaDe(draft.cuenta)).bloq)draft.cuenta=(libres[0]||cs[0]).id;
   if(!draft.checks)draft.checks={};
   const items=c?itemsDe(op,draft.cuenta):[];
-  let h=`<header class="back"><button type="button" class="ib" data-act="volver" aria-label="Volver a Hoy">${ico('atras',24)}</button><div><h1 class="h2" tabindex="-1">Checklist de entrada</h1><p class="sub">Antes de pulsar, cumple todas</p></div></header>
+  let h=`<header class="back"><button type="button" class="ib" data-act="volver" aria-label="Volver a Hoy">${ico('atras',24)}</button><div><h1 class="h2" tabindex="-1">Checklist de entrada</h1><p class="sub">Márcalas según lo que ves. Si entras sin alguna, la revisas al cerrar</p></div></header>
   ${seg('op',[['familia','Operativa de la familia'],['objetivo','Operativa del objetivo']],op,'Operativa')}
   <div class="cuentas" role="group" aria-label="Cuenta">${cs.map(x=>{const e=estadoCuenta(x);
     return `<button type="button" data-cta="${x.id}" class="${draft.cuenta===x.id&&!e.bloq?'on':''} ${e.bloq?'bloq':''}" aria-pressed="${draft.cuenta===x.id}" ${e.bloq?'aria-disabled="true"':''}><b>${esc(x.nombre)}</b><span>${etiquetaCuenta(x)} · ${fmtN(x.riesgo)} %</span>${e.lim?`<span class="${e.bloq?'er':e.aviso?'warn':''}">${e.bloq?'Bloqueada hoy':'Hoy '+fmtPct(e.p)+' de −'+fmtN(e.lim)+' %'}</span>`:''}</button>`}).join('')}</div>`;
@@ -929,8 +934,8 @@ function pintarEntrada(){const b=document.getElementById('btnEntrar');if(!b)retu
   const all=entradaLista();
   const pt=document.getElementById('progTxt'),pb=document.getElementById('progBar');
   if(pt)pt.textContent=done+' de '+n+' condiciones';if(pb){pb.style.width=Math.round(done/n*100)+'%';pb.parentElement.classList.toggle('ok',done===n)}
-  b.classList.toggle('off',!all);b.classList.toggle('listo',all);b.innerHTML=ico(all?'check':'candado',20,2.4)+' Registrar la entrada';
-  const nota=document.getElementById('notaEntrada');if(nota){nota.className='nota'+(all?' ok':'');nota.textContent=all?'Checklist completo. A respetar el plan.':faltaEntrada()}}
+  const pend=n-done;b.classList.toggle('off',!all);b.classList.toggle('listo',all&&pend===0);b.innerHTML=ico(!all?'candado':pend===0?'check':'flecha',20,2.4)+' Registrar la entrada';
+  const nota=document.getElementById('notaEntrada');if(nota){nota.className='nota'+(all?(pend===0?' ok':' warn'):'');nota.textContent=!all?faltaEntrada():pend===0?'Checklist completo. A respetar el plan.':(pend===1?'Falta 1 condición: la revisarás al cerrar':'Faltan '+pend+' condiciones: las revisarás al cerrar')}}
 function vCierre(){
   const o=S.open;const items=itemsDe(o.op,o.cuenta);const cta=cuentaDe(o.cuenta);
   if(!Array.isArray(tmp.fallos))tmp=Object.assign(nuevoTmp(),tmp,{fallos:[]});
@@ -939,6 +944,7 @@ function vCierre(){
   const rk=[...new Set([cta.riesgo/4,cta.riesgo/2,cta.riesgo].map(v=>Math.round(v*100)/100).filter(v=>v>0))];
   const rr=[['-1','−1'],['0','0'],['1','+1'],['1,5','+1,5'],['2','+2']];
   const igual=(a,b)=>a!==''&&!isNaN(num(a))&&Math.abs(num(a)-num(b))<1e-9;
+  const sinM=sinMarcar(o);
   let h=`<header class="back"><button type="button" class="ib" data-act="volver" aria-label="Volver a Hoy">${ico('atras',24)}</button><div><h1 class="h2" tabindex="-1">Cierre de operación</h1><p class="sub">${esc(o.inst)} · ${o.dir} · ${CL[o.op].nombre} · ${esc(cta.nombre)}</p></div></header>
   <section class="card form"><label class="lbl" for="rr">Resultado en R</label>
   <div class="rapidos rr" role="group" aria-label="Resultados habituales">${rr.map(([v,t])=>`<button type="button" data-rr="${v}" class="${igual(tmp.r,v)?'on':''}" aria-pressed="${igual(tmp.r,v)}">${t}</button>`).join('')}</div>
@@ -948,11 +954,11 @@ function vCierre(){
   <div class="dosf"><span class="field ${sobre?'er':''}" id="fRiesgo"><input type="text" inputmode="decimal" id="riesgo" value="${esc(tmp.riesgo)}" placeholder="Otro riesgo" aria-label="Riesgo en porcentaje" autocomplete="off" enterkeyhint="done"><em>%</em></span>
   <span class="field"><input type="text" inputmode="decimal" id="lotes" value="${esc(tmp.lotes)}" placeholder="Lotaje (opcional)" aria-label="Lotaje, opcional" autocomplete="off" enterkeyhint="done"></span></div>
   <div class="alerta" role="alert" id="warnS" ${sobre?'':'hidden'}>${ico('alerta',22)}<div><b>Sobreloteo detectado</b><span>Superas el riesgo máximo de ${esc(cta.nombre)} (${fmtN(cta.riesgo)} %). Esta operación no suma a la racha.</span></div></div></section>
-  <section class="card revision"><h2>Revisión honesta</h2>`;
+  <section class="card revision"><h2>Revisión honesta</h2>${sinM.length?`<div class="aviso-sin" role="note"><b>Entraste con ${sinM.length} ${sinM.length===1?'condición sin marcar':'condiciones sin marcar'}.</b><span>Ahora, con calma: si se cumplían, responde Sí; si no, pulsa No y confirma cuáles fallaron.</span></div>`:''}`;
   preg.forEach(([k,t,neg])=>{const v=tmp[k];
     const cls=x=>v===x?(x===neg?'on er':'on ok'):'';
     h+=`<div class="q"><span>${t}</span><div role="group" aria-label="${t}"><button type="button" data-yn="${k}" data-v="1" class="${cls(true)}" aria-pressed="${v===true}">Sí</button><button type="button" data-yn="${k}" data-v="0" class="${cls(false)}" aria-pressed="${v===false}">No</button></div></div>`;
-    if(k==='checklistOk'&&v===false)h+=`<p class="mu sm" style="margin:2px 0 0">¿Qué falló? Marca lo que no se cumplía.</p><div class="chips">`+items.map((it,i)=>`<button type="button" class="chipf ${tmp.fallos.includes(i)?'on':''}" data-fallo="${i}" aria-pressed="${tmp.fallos.includes(i)}">${it}</button>`).join('')+`</div>`});
+    if(k==='checklistOk'&&v===false)h+=`<p class="mu sm" style="margin:2px 0 0">¿Qué falló? Marca lo que no se cumplía.</p><div class="chips">`+items.map((it,i)=>`<button type="button" class="chipf ${tmp.fallos.includes(i)?'on':''}" data-fallo="${i}" aria-pressed="${tmp.fallos.includes(i)}">${it}${sinM.includes(i)?'<small class="sinm">Sin marcar al entrar</small>':''}</button>`).join('')+`</div>`});
   h+=`</section><button type="button" class="link dk" data-act="descartar">No llegué a entrar: anular la entrada</button>
   <div class="barra"><p class="nota" id="notaCierre" role="status"></p><button type="button" class="btn primary" data-act="guardarCierre" id="btnCierre">Guardar cierre</button></div>`;
   return h}
@@ -1201,9 +1207,10 @@ function listoCierre(){return tmp.riesgo!==''&&tmp.r!==''&&!isNaN(num(tmp.riesgo
 function faltaCierre(){const f=[];if(tmp.r===''||isNaN(num(tmp.r)))f.push('el resultado en R');if(tmp.riesgo===''||isNaN(num(tmp.riesgo))||num(tmp.riesgo)<=0)f.push('el riesgo');
   [['promedio','si promediaste'],['movioStop','si moviste el stop'],['checklistOk','si cumpliste el checklist'],['captura','si guardaste la captura']].forEach(([k,t])=>{if(typeof tmp[k]!=='boolean')f.push(t)});
   return f.length?'Falta: '+f.join(', '):''}
-function entradaLista(){const c=CL[draft.op];if(!c)return false;if(draft.cuenta&&estadoCuenta(cuentaDe(draft.cuenta)).bloq)return false;const n=itemsDe(draft.op,draft.cuenta).length;for(let i=0;i<n;i++)if(!draft.checks[i])return false;return !!((draft.inst||'').trim()&&draft.dir)}
-function faltaEntrada(){const c=CL[draft.op];if(!c)return'Elige primero la operativa';if(draft.cuenta&&estadoCuenta(cuentaDe(draft.cuenta)).bloq)return'Esa cuenta ha llegado a su límite de pérdida diaria';const n=itemsDe(draft.op,draft.cuenta).length;let x=0;for(let i=0;i<n;i++)if(!draft.checks[i])x++;
-  if(x)return x===1?'Falta 1 condición':'Faltan '+x+' condiciones';if(!(draft.inst||'').trim())return'Indica el instrumento';return'Elige compra o venta'}
+function condPendientes(){const n=itemsDe(draft.op,draft.cuenta).length;let x=0;for(let i=0;i<n;i++)if(!draft.checks[i])x++;return x}
+function entradaLista(){const c=CL[draft.op];if(!c)return false;if(draft.cuenta&&estadoCuenta(cuentaDe(draft.cuenta)).bloq)return false;return !!((draft.inst||'').trim()&&draft.dir)}
+function faltaEntrada(){const c=CL[draft.op];if(!c)return'Elige primero la operativa';if(draft.cuenta&&estadoCuenta(cuentaDe(draft.cuenta)).bloq)return'Esa cuenta ha llegado a su límite de pérdida diaria';
+  if(!(draft.inst||'').trim())return'Indica el instrumento';return'Elige compra o venta'}
 function readCierre(){const r=val('riesgo'),l=val('lotes'),rr=val('rr');if(r!==null)tmp.riesgo=r.trim();if(l!==null)tmp.lotes=l.trim();if(rr!==null)tmp.r=rr.trim()}
 function leerAjustes(){const g=id=>document.getElementById(id);if(!g('sNombre'))return;
   S.settings.nombre=g('sNombre').value.trim().slice(0,24);
@@ -1215,7 +1222,7 @@ function leerOnb(){if(!onb)return;const a=val('oNombre');if(a!==null)onb.nombre=
 /* ---------- Eventos ---------- */
 function irAEntrada(){const d=S.days[today()];
   if(d&&d.closed){view='hoy';render();toast('Tu día está cerrado. Mañana más.');return}
-  if(S.open){if(view!=='cierre'){if(!tmp||typeof tmp.r==='undefined')tmp=nuevoTmp()}view='cierre'}
+  if(S.open){if(view!=='cierre'){if(!tmp||typeof tmp.r==='undefined')tmp=tmpCierre()}view='cierre'}
   else{if(view!=='operar'&&!(draft&&draft.op&&draft.t&&Date.now()-draft.t<20*60e3))draft=nuevoDraft();view='operar'}
   guardarUI();render()}
 document.addEventListener('click',e=>{
@@ -1264,9 +1271,11 @@ document.addEventListener('click',e=>{
   if(a==='operar'){irAEntrada();return}
   if(a==='volver'){view='hoy';guardarUI();render();return}
   if(a==='entrar'){const v=val('inst');if(v!==null)draft.inst=v;
-    if(!entradaLista()){toast(faltaEntrada(),'er');vibra(30);const falta=document.querySelector('.item:not(.on)');if(falta)falta.scrollIntoView({behavior:'smooth',block:'center'});return}
-    S.open={op:draft.op,cuenta:draft.cuenta,inst:draft.inst.trim().toUpperCase().slice(0,16),dir:draft.dir,t:Date.now()};draft={};tmp=nuevoTmp();limpiarUI();save();vibra(20);view='hoy';render();toast('Entrada registrada. Ahora, a respetar el plan.','ok');return}
-  if(a==='cerrarOp'){if(!tmp||typeof tmp.r==='undefined')tmp=nuevoTmp();view='cierre';guardarUI();render();return}
+    if(!entradaLista()){toast(faltaEntrada(),'er');vibra(30);const f=document.getElementById('formEntrada');if(f)f.scrollIntoView({behavior:'smooth',block:'center'});return}
+    const nT=itemsDe(draft.op,draft.cuenta).length,marc=[];for(let i=0;i<nT;i++)if(draft.checks[i])marc.push(i);
+    S.open={op:draft.op,cuenta:draft.cuenta,inst:draft.inst.trim().toUpperCase().slice(0,16),dir:draft.dir,t:Date.now(),marcadas:marc};draft={};tmp=nuevoTmp();limpiarUI();save();vibra(20);view='hoy';render();
+    toast(marc.length<nT?'Entrada registrada. Al cerrar revisaremos '+(nT-marc.length)+(nT-marc.length===1?' condición.':' condiciones.'):'Entrada registrada. Ahora, a respetar el plan.',marc.length<nT?'':'ok');return}
+  if(a==='cerrarOp'){if(!tmp||typeof tmp.r==='undefined'||!tmp.fallos.length&&tmp.checklistOk==null&&tmp.r===''&&tmp.riesgo==='')tmp=tmpCierre();view='cierre';guardarUI();render();return}
   if(a==='guardarCierre'){readCierre();if(!S.open){view='hoy';render();return}
     if(!listoCierre()){toast(faltaCierre(),'er');vibra(30);return}
     const o=S.open;
